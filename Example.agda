@@ -6,7 +6,11 @@ thm f pq = {!  !}
 thm2 : {P Q : Set} → (P → Q) → P → Q
 thm2 pq p = {!   !}
 
+data _∧_ (A B : Set) : Set where
+    _∧ᵢ_ : A → B → A ∧ B
 
+swap : (A B : Set) → A ∧ B → B ∧ A
+swap ab = {!   !}
 
 
 {- 

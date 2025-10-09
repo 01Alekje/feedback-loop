@@ -37,9 +37,11 @@ load agda = do
 test :: AgdaProc -> IO ()
 test agda = do
     sendCommand agda loadString
-    sendCommand agda $ giveString "0" "pq"
+    --sendCommand agda $ giveString "0" "pq smeku"
+    --sendCommand agda $ autoString "2"
+    getResponse agda
     getResponse agda >>= print
-    getResponse agda >>= print
+    --readUntilEof agda
     
 
 
@@ -53,6 +55,7 @@ getResponse agda = do
         Left _ -> do
             getResponse agda
         Right disp -> pure disp
+
     
 readUntilEof :: AgdaProc -> IO ()
 readUntilEof agda = do

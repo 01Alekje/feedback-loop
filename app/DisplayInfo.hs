@@ -29,20 +29,27 @@ data DisplayInfo = DisplayInfo
 
 data InfoContent
   = AllGoalsWarnings
-      { errors :: [Value]
-      , invisibleGoals :: [Value]
-      , visibleGoals :: [VisibleGoal]
-      , warnings :: [Value]
+      { 
+      errors :: [Value], 
+      invisibleGoals :: [Value],
+      visibleGoals :: [VisibleGoal],
+      warnings :: [Value]
       }
   | ErrorInfo
-      { error :: ErrorDetails
-      , warnings :: [Value]
+      { 
+        error :: ErrorDetails,
+        warnings :: [Value]
       }
   | GoalSpecific
       { 
         goalInfo :: GoalInfo,
         interactionPoint :: InteractionPoint
       }  
+  | AutoFailed
+      { 
+        infoAutoFailed :: Text,
+        autoKind :: Text
+      }
   | OtherInfo Value
   deriving (Show)
 
@@ -148,6 +155,10 @@ instance FromJSON InfoContent where
         ErrorInfo
           <$> o .: "error"
           <*> o .: "warnings"
+      "Auto" ->
+        AutoFailed
+          <$> o .: "info"
+          <*> o .: "kind"
       _ -> pure (OtherInfo (Object o))
 
 instance FromJSON VisibleGoal where
