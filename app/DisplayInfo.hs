@@ -10,6 +10,8 @@ module DisplayInfo
     Range (..),
     Position (..),
     ErrorDetails (..),
+    GoalInfo (..),
+    GoalEntry (..),
     parse,
   )
 where
