@@ -28,24 +28,22 @@ sendCommand agda str = do
 load :: AgdaProc -> IO ()
 load agda = do 
     sendCommand agda loadString
-    res <- getResponse agda
-    case res of 
-        Left str -> print str
-        Right _ -> do 
-            sendCommand agda (contextString "0")
-            readUntilEof agda
+    resp <- getResponse agda
+    case resp of 
+        ResponseDisplay disp -> print disp
+        _ -> putStrLn "Unexpected response"
+    
 
 test :: AgdaProc -> IO ()
 test agda = do
     sendCommand agda loadString
-    --sendCommand agda (contextString "0")
-    sendCommand agda $ giveString "0" "pq (f pq)" -- may work for the thm 
-    readUntilEof agda
-    --getResponse agda >>= print
-    --getResponse agda >>= print
+    sendCommand agda $ giveString "0" "pq"
+    getResponse agda >>= print
+    getResponse agda >>= print
+    
 
 
-getResponse :: AgdaProc -> IO (Either String Response)
+getResponse :: AgdaProc -> IO Response
 getResponse agda = do
     agdaLine <- BS.hGetLine (agdaOut agda)
     let agdaLine' = if BS.fromString "JSON> " `BS.isPrefixOf` agdaLine 
@@ -54,7 +52,7 @@ getResponse agda = do
     case parse (BSL.fromStrict agdaLine') of 
         Left _ -> do
             getResponse agda
-        Right disp -> pure $ Right disp
+        Right disp -> pure disp
     
 readUntilEof :: AgdaProc -> IO ()
 readUntilEof agda = do
