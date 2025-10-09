@@ -1,4 +1,13 @@
 module Main where
 
+import Command 
+import AgdaProc (startAgda)
+
 main :: IO ()
-main = putStrLn "Hello, Haskell!"
+main = do 
+    agda <- startAgda
+    test agda
+    
+    
+
+
