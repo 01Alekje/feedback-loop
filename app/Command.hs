@@ -17,6 +17,9 @@ loadString = "IOTCM \"Example.agda\" None Indirect (Cmd_load \"Example.agda\" []
 contextString :: String -> String
 contextString hole = "IOTCM \"Example.agda\" None Indirect (Cmd_goal_type_context Simplified " ++ hole ++ " noRange \"\")"
 
+giveString :: String -> String -> String
+giveString hole exp = "IOTCM \"Example.agda\" None Indirect (Cmd_give WithoutForce " ++ hole ++ " noRange " ++ "\"" ++ exp ++ "\"" ++ ")"
+
 sendCommand :: AgdaProc -> String -> IO ()
 sendCommand agda str = do 
     hPutStrLn (agdaIn agda) str
@@ -35,9 +38,11 @@ load agda = do
 test :: AgdaProc -> IO ()
 test agda = do
     sendCommand agda loadString
-    sendCommand agda (contextString "0")
-    getResponse agda >>= print
-    getResponse agda >>= print
+    --sendCommand agda (contextString "0")
+    sendCommand agda $ giveString "0" "pq (f pq)" -- may work for the thm 
+    readUntilEof agda
+    --getResponse agda >>= print
+    --getResponse agda >>= print
 
 
 getResponse :: AgdaProc -> IO (Either String Response)
