@@ -1,13 +1,9 @@
 module Main where
 
-import Command 
 import AgdaProc (startAgda)
+import Command
 
 main :: IO ()
-main = do 
-    agda <- startAgda
-    test agda
-    
-    
-
-
+main = do
+  agda <- startAgda
+  test agda

@@ -1,138 +1,135 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module DisplayInfo (
-    Response(..),
-    DisplayInfo(..), 
-    InfoContent(..), 
-    VisibleGoal(..), 
-    ConstraintObj(..), 
-    Range(..), 
-    Position(..),
-    ErrorDetails(..),
-    parse
-) where
+module DisplayInfo
+  ( Response (..),
+    DisplayInfo (..),
+    InfoContent (..),
+    VisibleGoal (..),
+    ConstraintObj (..),
+    Range (..),
+    Position (..),
+    ErrorDetails (..),
+    parse,
+  )
+where
 
 import Data.Aeson
+import Data.ByteString.Lazy (ByteString)
 import Data.Text (Text)
 import GHC.Generics
-import Data.ByteString.Lazy (ByteString)
 
 data Response = ResponseDisplay DisplayInfo | ResponseGive GiveResult
-    deriving (Show)
-
+  deriving (Show)
 
 data DisplayInfo = DisplayInfo
-  { kind :: Text
-  , info :: InfoContent
-  } deriving (Show, Generic)
+  { kind :: Text,
+    info :: InfoContent
+  }
+  deriving (Show, Generic)
 
 data InfoContent
   = AllGoalsWarnings
-      { 
-      errors :: [Value], 
-      invisibleGoals :: [Value],
-      visibleGoals :: [VisibleGoal],
-      warnings :: [Value]
+      { errors :: [Value],
+        invisibleGoals :: [Value],
+        visibleGoals :: [VisibleGoal],
+        warnings :: [Value]
       }
   | ErrorInfo
-      { 
-        error :: ErrorDetails,
+      { error :: ErrorDetails,
         warnings :: [Value]
       }
   | GoalSpecific
-      { 
-        goalInfo :: GoalInfo,
+      { goalInfo :: GoalInfo,
         interactionPoint :: InteractionPoint
-      }  
+      }
   | AutoFailed
-      { 
-        infoAutoFailed :: Text,
+      { infoAutoFailed :: Text,
         autoKind :: Text
       }
   | OtherInfo Value
   deriving (Show)
 
 data VisibleGoal = VisibleGoal
-  {
-    constraintObjVisible :: ConstraintObj,
+  { constraintObjVisible :: ConstraintObj,
     goalKindVisible :: Text,
     goalTypeVisible :: Text
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 data ConstraintObj = ConstraintObj
-  {
-    idConstraintObj :: Int,
+  { idConstraintObj :: Int,
     rangeConstraintObj :: [Range]
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 data Range = Range
-  {
-    startRange :: Position,
+  { startRange :: Position,
     endRange :: Position
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 data Position = Position
-  {
-    colPosition :: Int,
+  { colPosition :: Int,
     linePosition :: Int,
     posPosition :: Int
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 data GoalInfo = GoalInfo
-  { 
-    boundaryGoalInfo :: [Value],
+  { boundaryGoalInfo :: [Value],
     entriesGoalInfo :: [GoalEntry],
     kindGoalInfo :: Text,
     outputFormsGoalInfo :: [Value],
     rewriteGoalInfo :: Text,
     typeGoalInfo :: Text,
     typeAuxGoalInfo :: GoalTypeAux
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 data GoalEntry = GoalEntry
-  { 
-    bindingGoalEntry :: Text,
+  { bindingGoalEntry :: Text,
     inScopeGoalEntry :: Bool,
     originalNameGoalEntry :: Text,
     reifiedNameGoalEntry :: Text
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 newtype GoalTypeAux = GoalTypeAux
-  { 
-    kindGoalTypeAux :: Text
-  } deriving (Show, Generic)
+  { kindGoalTypeAux :: Text
+  }
+  deriving (Show, Generic)
 
 data InteractionPoint = InteractionPoint
-  { 
-    idInteractionPoint :: Int,
+  { idInteractionPoint :: Int,
     rangeInteractionPoint :: [Range]
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 newtype ErrorDetails = ErrorDetails
-  {
-    errorMessage :: Text
-  } deriving (Show, Generic)
+  { errorMessage :: Text
+  }
+  deriving (Show, Generic)
 
 data GiveResult = GiveResult
-  { 
-    giveResultContent :: GiveResultContent,
+  { giveResultContent :: GiveResultContent,
     interactionPointGiveResult :: InteractionPoint,
     kindGiveResult :: Text
-  } deriving (Show, Generic)
+  }
+  deriving (Show, Generic)
 
 newtype GiveResultContent = GiveResultContent
-  { 
-    strGiveResultContent :: Text
-  } deriving (Show, Generic)
+  { strGiveResultContent :: Text
+  }
+  deriving (Show, Generic)
 
 instance FromJSON Response where
-    parseJSON = withObject "Response" $ \v -> do
-        kind' <- v .: "kind"
-        case kind' :: String of
-            "DisplayInfo" -> ResponseDisplay <$> parseJSON (Object v)
-            "GiveAction"  -> ResponseGive <$> parseJSON (Object v)
-            _                  -> fail $ "Unknown response kind: " ++ kind'
+  parseJSON = withObject "Response" $ \v -> do
+    kind' <- v .: "kind"
+    case kind' :: String of
+      "DisplayInfo" -> ResponseDisplay <$> parseJSON (Object v)
+      "GiveAction" -> ResponseGive <$> parseJSON (Object v)
+      _ -> fail $ "Unknown response kind: " ++ kind'
 
 instance FromJSON DisplayInfo where
   parseJSON = genericParseJSON defaultOptions
@@ -162,7 +159,7 @@ instance FromJSON InfoContent where
       _ -> pure (OtherInfo (Object o))
 
 instance FromJSON VisibleGoal where
-  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
     where
       fix "constraintObjVisible" = "constraintObj"
       fix "goalTypeVisible" = "type"
@@ -170,81 +167,80 @@ instance FromJSON VisibleGoal where
       fix s = s
 
 instance FromJSON ConstraintObj where
-  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
     where
       fix "idConstraintObj" = "id"
       fix "rangeConstraintObj" = "range"
       fix s = s
 
 instance FromJSON Range where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "startRange" = "start"
-        fix "endRange" = "end"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "startRange" = "start"
+      fix "endRange" = "end"
+      fix s = s
 
 instance FromJSON Position where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "colPosition" = "col"
-        fix "linePosition" = "line"
-        fix "posPosition" = "pos"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "colPosition" = "col"
+      fix "linePosition" = "line"
+      fix "posPosition" = "pos"
+      fix s = s
 
 instance FromJSON GoalInfo where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "boundaryGoalInfo" = "boundary"
-        fix "entriesGoalInfo" = "entries"
-        fix "kindGoalInfo" = "kind"
-        fix "outputFormsGoalInfo" = "outputForms"
-        fix "rewriteGoalInfo" = "rewrite"
-        fix "typeGoalInfo" = "type"
-        fix "typeAuxGoalInfo" = "typeAux"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "boundaryGoalInfo" = "boundary"
+      fix "entriesGoalInfo" = "entries"
+      fix "kindGoalInfo" = "kind"
+      fix "outputFormsGoalInfo" = "outputForms"
+      fix "rewriteGoalInfo" = "rewrite"
+      fix "typeGoalInfo" = "type"
+      fix "typeAuxGoalInfo" = "typeAux"
+      fix s = s
 
 instance FromJSON GoalEntry where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "bindingGoalEntry" = "binding"
-        fix "inScopeGoalEntry" = "inScope"
-        fix "originalNameGoalEntry" = "originalName"
-        fix "reifiedNameGoalEntry" = "reifiedName"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "bindingGoalEntry" = "binding"
+      fix "inScopeGoalEntry" = "inScope"
+      fix "originalNameGoalEntry" = "originalName"
+      fix "reifiedNameGoalEntry" = "reifiedName"
+      fix s = s
 
 instance FromJSON GoalTypeAux where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "kindGoalTypeAux" = "kind"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "kindGoalTypeAux" = "kind"
+      fix s = s
 
 instance FromJSON InteractionPoint where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "idInteractionPoint" = "id"
-        fix "rangeInteractionPoint" = "range"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "idInteractionPoint" = "id"
+      fix "rangeInteractionPoint" = "range"
+      fix s = s
 
 instance FromJSON ErrorDetails where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "errorMessage" = "message"
-        fix s = s
-    
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "errorMessage" = "message"
+      fix s = s
+
 instance FromJSON GiveResult where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-      where
-        fix "giveResultContent" = "giveResult"
-        fix "interactionPointGiveResult" = "interactionPoint"
-        fix "kindGiveResult" = "kind"
-        fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "giveResultContent" = "giveResult"
+      fix "interactionPointGiveResult" = "interactionPoint"
+      fix "kindGiveResult" = "kind"
+      fix s = s
 
 instance FromJSON GiveResultContent where
-    parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = fix }
-        where
-            fix "strGiveResultContent" = "str"
-            fix s = s
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "strGiveResultContent" = "str"
+      fix s = s
 
-parse :: ByteString -> Either String Response 
-parse = eitherDecode 
-    
+parse :: ByteString -> Either String Response
+parse = eitherDecode
