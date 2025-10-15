@@ -12,6 +12,9 @@ module DisplayInfo
     ErrorDetails (..),
     GoalInfo (..),
     GoalEntry (..),
+    GiveResult (..),
+    GiveResultContent (..),
+    MakeCase (..),
     parse,
   )
 where
@@ -21,7 +24,10 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Text (Text)
 import GHC.Generics
 
-data Response = ResponseDisplay DisplayInfo | ResponseGive GiveResult
+data Response
+  = ResponseDisplay DisplayInfo
+  | ResponseGive GiveResult
+  | ResponseMakeCase MakeCase
   deriving (Show)
 
 data DisplayInfo = DisplayInfo
@@ -125,12 +131,20 @@ newtype GiveResultContent = GiveResultContent
   }
   deriving (Show, Generic)
 
+data MakeCase = MakeCase
+  { clausesMakeCase :: [Text],
+    interactionPointMakeCase :: InteractionPoint,
+    variantMakeCase :: Text -- "Function", "ExtendedLambda", etc.
+  }
+  deriving (Show, Generic)
+
 instance FromJSON Response where
   parseJSON = withObject "Response" $ \v -> do
     kind' <- v .: "kind"
     case kind' :: String of
       "DisplayInfo" -> ResponseDisplay <$> parseJSON (Object v)
       "GiveAction" -> ResponseGive <$> parseJSON (Object v)
+      "MakeCase" -> ResponseMakeCase <$> parseJSON (Object v)
       _ -> fail $ "Unknown response kind: " ++ kind'
 
 instance FromJSON DisplayInfo where
@@ -242,6 +256,14 @@ instance FromJSON GiveResultContent where
   parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
     where
       fix "strGiveResultContent" = "str"
+      fix s = s
+
+instance FromJSON MakeCase where
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = fix}
+    where
+      fix "clausesMakeCase" = "clauses"
+      fix "interactionPointMakeCase" = "interactionPoint"
+      fix "variantMakeCase" = "variant"
       fix s = s
 
 parse :: ByteString -> Either String Response

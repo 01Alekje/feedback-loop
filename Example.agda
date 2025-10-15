@@ -1,21 +1,29 @@
 module Example where
 
-thm : {P Q : Set} → ((P → Q) → P) → (P → Q) → Q
-thm f pq = {!  !}
+open import Data.Nat
 
-{- 
+data Nat : Set where
+    zero : Nat
+    suc : Nat → Nat
 
-    AI COMMANDS:
-        ---- PRIO 1
-        GET CONTEXTS / LOAD 
-        AUTO 
-        GIVE 
-        ---- PRIO 2
-        INSERT PATTERN
-        PATTERN MATCHING
-        ---- PRIO 3
-        HELPER FUNCTIONS
+data _∧_ (A B : Set) : Set where
+    both : A → B → A ∧ B
 
-    - RESTART
+data _∨_ (A B : Set) : Set where
+    inl : A → A ∨ B
+    inr : B → A ∨ B
 
--}
+thm : Nat → Nat → Nat
+thm zero blah = {!   !}
+thm (suc n) blah = {!   !}
+    where 
+        f : {Q P : Set} → P → Q
+        f p = {!   !}
+
+        g : {Q P : Set} → Q → P
+        g f = {!   !}
+
+
+swap∨ : {P Q : Set} → P ∨ Q → Q ∨ P
+swap∨ (inl x) = inr x
+swap∨ (inr x) = inl x
