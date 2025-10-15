@@ -1,9 +1,11 @@
 module Main where
 
-import AgdaProc (startAgda)
-import Command
+import System.Environment.Blank (getEnvDefault)
 
+{- agda <- startAgda
+res <- runExceptT (test agda)
+print res -}
 main :: IO ()
 main = do
-  agda <- startAgda
-  test agda
+  apiKey <- getEnvDefault "OPENAI_API_KEY" "NONE"
+  print apiKey

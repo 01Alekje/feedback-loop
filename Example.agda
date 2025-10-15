@@ -1,29 +1,13 @@
 module Example where
 
-open import Data.Nat
 
-data Nat : Set where
-    zero : Nat
-    suc : Nat → Nat
+thm1 : {P Q : Set} → (P → (P → Q)) → ((P → Q) → P) → Q
+thm1 = {!   !}
 
-data _∧_ (A B : Set) : Set where
-    both : A → B → A ∧ B
+thm2 : {P Q : Set} → (((P → Q) → Q) → Q) → P → Q
+thm2 = {!   !}
 
-data _∨_ (A B : Set) : Set where
-    inl : A → A ∨ B
-    inr : B → A ∨ B
-
-thm : Nat → Nat → Nat
-thm zero blah = {!   !}
-thm (suc n) blah = {!   !}
-    where 
-        f : {Q P : Set} → P → Q
-        f p = {!   !}
-
-        g : {Q P : Set} → Q → P
-        g f = {!   !}
+thm3 : {P Q : Set} → ((P → Q) → P) → (P → Q) → Q
+thm3 = {!   !}
 
 
-swap∨ : {P Q : Set} → P ∨ Q → Q ∨ P
-swap∨ (inl x) = inr x
-swap∨ (inr x) = inl x
