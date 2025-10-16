@@ -4,6 +4,7 @@ module Command (load, LoadData, prettyHoles, autoAndReload, giveAndReload, addBi
 
 import AgdaProc (AgdaProc (..))
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.List (intercalate, isPrefixOf)

@@ -78,7 +78,6 @@ my_schema = {
     }
 }
 
-# Just pass your schema directly
 def get_structured_output(code: str, context: str, prev_responses):
     completion = client.chat.completions.create(
         model="gpt-5-nano",
@@ -96,6 +95,9 @@ def get_structured_output(code: str, context: str, prev_responses):
                 - ADD_BINDERS: This command will ask you to add a list of binders to a specified function. You must provide the list of binders and the function you want to add them to. If you need to prove something of type P -> Q, you should almost always use this command to bind a identifier to P. This does not create or fill any holes.
                 - CASE_SPLIT: Use this command to case split on a binder. This works for binders of algebraic data types (given by the data ... keyword). This is your only method of pattern matching (you cannot use GIVE for this). You must provide the hole number and the binder you want to case split on.
 
+                Important: 
+                 - Never try an expression like "case .. of ..." since it is not valid Agda syntax and won't work. Instead, use ADD_BINDERS followed by a CASE_SPLIT. 
+                
                 Tips: 
                 - Always try to use AUTO first, it is often able to fill in simple expressions.
                 - If you need to prove something of type P -> Q (or in general A -> B -> C -> D), use ADD_BINDERS to add a binder for P to the function you are trying to prove.
