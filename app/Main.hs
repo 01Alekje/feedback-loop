@@ -37,34 +37,10 @@ feedbackLoop holes agda counter =
       case parse (BL.pack response) of
         Left err -> print err
         Right command -> case command of
-          Give hole expr -> do
-            res <- runExceptT (giveAndReload holes agda hole expr)
-            case res of
-              Left err -> handleErr response err
-              Right holes' -> do
-                TIO.appendFile previousResponsesFile $ TL.pack $ response ++ " - " ++ "Success" ++ " - " ++ "Request " ++ show counter ++ "\n"
-                feedbackLoop holes' agda (counter + 1)
-          Auto hole -> do
-            res <- runExceptT (autoAndReload holes agda hole)
-            case res of
-              Left err -> handleErr response err
-              Right holes' -> do
-                TIO.appendFile previousResponsesFile $ TL.pack $ response ++ " - " ++ "Success" ++ " - " ++ "Request " ++ show counter ++ "\n"
-                feedbackLoop holes' agda (counter + 1)
-          AddBinders binders name -> do
-            res <- runExceptT (addBinders agda name binders)
-            case res of
-              Left err -> handleErr response err
-              Right holes' -> do
-                TIO.appendFile previousResponsesFile $ TL.pack $ response ++ " - " ++ "Success" ++ " - " ++ "Request " ++ show counter ++ "\n"
-                feedbackLoop holes' agda (counter + 1)
-          CaseSplit hole binder -> do
-            res <- runExceptT (caseSplit holes agda hole binder)
-            case res of
-              Left err -> handleErr response err
-              Right holes' -> do
-                TIO.appendFile previousResponsesFile $ TL.pack $ response ++ " - " ++ "Success" ++ " - " ++ "Request " ++ show counter ++ "\n"
-                feedbackLoop holes' agda (counter + 1)
+          Give hole expr -> runExceptT (giveAndReload holes agda hole expr) >>= handleAgdaResponse response
+          Auto hole -> runExceptT (autoAndReload holes agda hole) >>= handleAgdaResponse response
+          AddBinders binders name -> runExceptT (addBinders agda name binders) >>= handleAgdaResponse response
+          CaseSplit hole binder -> runExceptT (caseSplit holes agda hole binder) >>= handleAgdaResponse response
   where
     writeContext :: LoadData -> IO ()
     writeContext holes' = TIO.writeFile contextFile (TL.pack (prettyHoles holes'))
@@ -82,10 +58,12 @@ feedbackLoop holes agda counter =
         feedbackLoop holes agda (counter + 1)
       UnknownResponse -> print "Got an unknown response from agda"
 
-{-
-    Context
-    PrevResp
-    Example.agda
+    handleSuccess :: String -> LoadData -> IO ()
+    handleSuccess resp holes' = do
+      TIO.appendFile previousResponsesFile $ TL.pack $ resp ++ " - " ++ "Success" ++ " - " ++ "Request " ++ show counter ++ "\n"
+      feedbackLoop holes' agda (counter + 1)
 
-    appendFile
--}
+    handleAgdaResponse :: String -> Either ResponseError LoadData -> IO ()
+    handleAgdaResponse resp res = case res of
+      Left err -> handleErr resp err
+      Right holes' -> handleSuccess resp holes'
