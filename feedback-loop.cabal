@@ -61,8 +61,9 @@ executable feedback-loop
     -- Modules included in this executable, other than Main.
     other-modules:
         AgdaProc,
-        DisplayInfo,
-        Command
+        Response,
+        Command,
+        Reply,
 
 
     -- LANGUAGE extensions used by modules in this package.
@@ -70,13 +71,14 @@ executable feedback-loop
 
     -- Other library packages from which modules are imported.
     build-depends:    
-        base,
+        base >=4.7,
         process,
         text,
         bytestring,
         aeson,
         mtl,
-        req,
+        openai,
+        vector,
 
 
 

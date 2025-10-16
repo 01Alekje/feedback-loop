@@ -1,13 +1,9 @@
 module Example where
 
 
-thm1 : {P Q : Set} → (P → (P → Q)) → ((P → Q) → P) → Q
-thm1 = {!   !}
+data _∨_ (A B : Set) : Set where
+    left : A → A ∨ B
+    right : B → A ∨ B
 
-thm2 : {P Q : Set} → (((P → Q) → Q) → Q) → P → Q
-thm2 = {!   !}
-
-thm3 : {P Q : Set} → ((P → Q) → P) → (P → Q) → Q
-thm3 = {!   !}
-
-
+thm4 : {P Q : Set} → P ∨ Q → Q ∨ P
+thm4 = {!   !}

@@ -1,14 +1,16 @@
-module Command (load, test) where
+{-# OPTIONS_GHC -Wno-unused-do-bind #-}
+
+module Command (load, LoadData, prettyHoles, autoAndReload, giveAndReload, addBinders, caseSplit, ResponseError (..)) where
 
 import AgdaProc (AgdaProc (..))
 import Control.Monad.Except
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import Data.List (isPrefixOf)
+import Data.List (intercalate, isPrefixOf)
 import qualified Data.String as BS
 import qualified Data.Text as TL
 import qualified Data.Text.IO as TIO
-import DisplayInfo
+import Response
 import System.IO (hFlush, hGetLine, hIsEOF, hPutStrLn)
 import Prelude hiding (exp, id)
 
@@ -112,20 +114,16 @@ addCasesLines hole cases lines' =
   where
     splitPos = linePosition $ startRange (holeRange hole)
 
-addBinders :: AgdaProc -> String -> [String] -> AgdaM ()
+addBinders :: AgdaProc -> String -> [String] -> AgdaM LoadData
 addBinders agda name binders = do
   contents <- liftIO $ lines . TL.unpack <$> TIO.readFile exampleFile
   liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines $ addBindersLines name binders contents
-  sendCommand agda loadString
-  resp <- liftIO $ getResponse agda
-  case resp of
-    ResponseDisplay (DisplayInfo _ info') -> case info' of
-      ErrorInfo (ErrorDetails msg) _ -> do
-        liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines contents
-        throwError $ AgdaError $ TL.unpack msg
-      AllGoalsWarnings {} -> pure ()
-      _ -> throwError UnknownResponse
-    _ -> throwError UnknownResponse
+  result <- lift $ runExceptT (load agda)
+  case result of
+    Left err -> do
+      liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines contents
+      throwError err
+    Right val -> return val
 
 addBindersLines :: String -> [String] -> [String] -> [String]
 addBindersLines name binders = map addBindersLine
@@ -233,3 +231,30 @@ giveString hole exp = "IOTCM " ++ qoute exampleFile ++ " None Indirect (Cmd_give
 
 caseString :: Int -> String -> String
 caseString hole binder = "IOTCM " ++ qoute exampleFile ++ " None Indirect (Cmd_make_case " ++ show hole ++ " noRange " ++ qoute binder ++ ")"
+
+prettyHoles :: LoadData -> String
+prettyHoles holes = intercalate "\n" (map prettyHole holes)
+  where
+    prettyHole :: (Int, Hole) -> String
+    prettyHole (id, Hole {holeType = ty, holeRange = range, context = ctx}) =
+      "Hole " ++ show id ++ "\n\t" ++ "Goal Type: " ++ ty ++ "\n\t" ++ prettyRange range ++ "\n\t" ++ "Context:\n" ++ concatMap (("\t" ++) . prettyVar) ctx
+
+    prettyVar :: (String, String, Bool) -> String
+    prettyVar (name, ty, inScope) = name ++ " : " ++ ty ++ if inScope then " (Is in Scope)" else " (Is not in scope)" ++ "\n"
+
+    prettyRange :: Range -> String
+    prettyRange (Range (Position col1 line1 pos1) (Position col2 line2 pos2)) =
+      "start = (col = "
+        ++ show col1
+        ++ ", line = "
+        ++ show line1
+        ++ ", pos = "
+        ++ show pos1
+        ++ ")\n\t"
+        ++ "end = (col = "
+        ++ show col2
+        ++ ", line = "
+        ++ show line2
+        ++ ", pos = "
+        ++ show pos2
+        ++ ")"

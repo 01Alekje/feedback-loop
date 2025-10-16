@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module DisplayInfo
+module Response
   ( Response (..),
     DisplayInfo (..),
     InfoContent (..),
