@@ -2,7 +2,7 @@ module Main where
 
 import AgdaProc (AgdaProc, startAgda)
 import Command
-import Control.Monad.Except (runExcept, runExceptT)
+import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Text as TL
 import qualified Data.Text.IO as TIO
@@ -67,7 +67,7 @@ feedbackLoop holes agda counter =
                 feedbackLoop holes' agda (counter + 1)
   where
     writeContext :: LoadData -> IO ()
-    writeContext holes = TIO.writeFile contextFile (TL.pack (prettyHoles holes))
+    writeContext holes' = TIO.writeFile contextFile (TL.pack (prettyHoles holes'))
 
     queryNano :: IO String
     queryNano = readProcess "python3" ["ApiService.py", codeFile, contextFile, previousResponsesFile] ""

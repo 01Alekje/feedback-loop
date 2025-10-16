@@ -11,7 +11,7 @@ import qualified Data.String as BS
 import qualified Data.Text as TL
 import qualified Data.Text.IO as TIO
 import Response
-import System.IO (hFlush, hGetLine, hIsEOF, hPutStrLn)
+import System.IO (hFlush, hPutStrLn)
 import Prelude hiding (exp, id)
 
 type LoadData = [(Int, Hole)]
@@ -76,14 +76,6 @@ load agda = do
     getRangeAndId (VisibleGoal (ConstraintObj id rs) _ _) = case rs of
       [range] -> (range, id)
       _ -> undefined
-
-test :: AgdaProc -> AgdaM ()
-test agda = do
-  holes <- load agda
-  holes <- caseSplit holes agda 4 "pq"
-  holes <- giveAndReload holes agda 4 "inr x"
-  holes <- giveAndReload holes agda 4 "inl x"
-  return ()
 
 caseSplit :: LoadData -> AgdaProc -> Int -> String -> AgdaM LoadData
 caseSplit holes agda id binder = do
@@ -200,16 +192,6 @@ getResponse agda = do
   case parse (BSL.fromStrict agdaLine') of
     Left _ -> getResponse agda
     Right disp -> pure disp
-
-readUntilEof :: AgdaProc -> IO ()
-readUntilEof agda = do
-  eof <- hIsEOF (agdaOut agda)
-  if eof
-    then putStrLn "Reached EOF"
-    else do
-      line' <- hGetLine (agdaOut agda)
-      putStrLn line'
-      readUntilEof agda
 
 qoute :: String -> String
 qoute str = "\"" ++ str ++ "\""
