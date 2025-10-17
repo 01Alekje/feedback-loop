@@ -33,9 +33,12 @@ feedbackLoop holes agda counter =
     then return ()
     else do
       writeContext holes
+      putStrLn "Querying gpt-5-nano..."
+      putStrLn "Waiting for response..."
       response <- queryNano
+      putStrLn $ "Got response: " ++ response
       case parse (BL.pack response) of
-        Left err -> print err
+        Left err -> putStrLn err
         Right command -> case command of
           Give hole expr -> runExceptT (giveAndReload holes agda hole expr) >>= handleAgdaResponse response
           Auto hole -> runExceptT (autoAndReload holes agda hole) >>= handleAgdaResponse response
@@ -46,11 +49,13 @@ feedbackLoop holes agda counter =
     writeContext holes' = TIO.writeFile contextFile (TL.pack (prettyHoles holes'))
 
     queryNano :: IO String
-    queryNano = readProcess "python3" ["ApiService.py", codeFile, contextFile, previousResponsesFile] ""
+    queryNano = do
+      readProcess "python3" ["ApiService.py", codeFile, contextFile, previousResponsesFile] ""
 
     handleErr :: String -> ResponseError -> IO ()
     handleErr resp err = case err of
       HoleNotFound hole -> do
+        putStrLn $ "Trying to complte"
         TIO.appendFile previousResponsesFile $ TL.pack $ resp ++ " - " ++ "Error: " ++ "Hole " ++ show hole ++ " not found in context." ++ " - " ++ "Request " ++ show counter ++ "\n"
         feedbackLoop holes agda (counter + 1)
       AgdaError msg -> do
@@ -66,4 +71,6 @@ feedbackLoop holes agda counter =
     handleAgdaResponse :: String -> Either ResponseError LoadData -> IO ()
     handleAgdaResponse resp res = case res of
       Left err -> handleErr resp err
-      Right holes' -> handleSuccess resp holes'
+      Right holes' -> case holes' of
+        [] -> putStrLn "All Done!"
+        _ -> handleSuccess resp holes'
