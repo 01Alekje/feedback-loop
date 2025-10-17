@@ -111,7 +111,7 @@ addBinders :: AgdaProc -> String -> [String] -> AgdaM LoadData
 addBinders agda name binders = do
   contents <- liftIO $ lines . TL.unpack <$> TIO.readFile exampleFile
   liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines $ addBindersLines name binders contents
-  result <- lift $ runExceptT (load agda)
+  result <- liftIO $ runExceptT (load agda)
   case result of
     Left err -> do
       liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines contents
@@ -198,7 +198,7 @@ qoute :: String -> String
 qoute str = "\"" ++ str ++ "\""
 
 exampleFile :: String
-exampleFile = "Example.agda"
+exampleFile = "/tmp/tempFile.agda"
 
 autoString :: Int -> String
 autoString hole = "IOTCM " ++ qoute exampleFile ++ " None Indirect (Cmd_autoOne AsIs " ++ show hole ++ " noRange " ++ qoute [] ++ ")"

@@ -1,9 +1,5 @@
-module Example where
+exProp1 : {P Q : Set} -> (P -> P -> Q) -> ((P -> Q) -> P) -> Q
+exProp1 {P} {Q} f g = f (g (λ z → f z z)) (g (λ z → f z z))
 
-
-data _∨_ (A B : Set) : Set where
-    left : A → A ∨ B
-    right : B → A ∨ B
-
-thm4 : {P Q : Set} → P ∨ Q → Q ∨ P
-thm4 pq = ?
+exProp2 : {P Q : Set} -> (P -> P -> Q) -> ((P -> Q) -> P) -> Q
+exProp2 {P} {Q} f g = f (g (λ x → f x x)) (g (λ x → f x x))

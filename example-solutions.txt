@@ -1,0 +1,101 @@
+thm1 : {P Q : Set} → P → (P → Q) → Q
+thm1 = {!0!}
+
+How to solve thm1:
+1. {"command": "ADD_BINDERS", "binders": ["p", "pq"], "function": "thm1"} - this binds the function types P to "p" and (P → Q) to "pq" 
+2. {"command": "GIVE", "hole": 0, "expression": "pq p"} - this inserts the "pq p" into the hole, resulting in the completed hole. 
+
+thm2 : {P Q : Set} → (P → (P → Q)) → ((P → Q) → P) → Q
+thm2 = {!0!}
+
+How to solve thm2: 
+1. {"command": "ADD_BINDERS", "binders": ["p", "pq"], "function": "thm2"} - this binds the function types (P → (P → Q)) to "ppq" and ((P → Q) → P) to "pqp" 
+2. {"command": "GIVE", "hole": 0, "expression": "ppq ? ?"} - this will result in the arguments for ppq being two new holes. (hole 0 and hole 1)
+3. {"command": "GIVE", "hole": 1, "expression": "pqp ?"} - this will result in hole 1 being replaced by a "pqp", whoose arguement is the new hole 1. 
+4. {"command": "GIVE", "hole": 0, "expression": "pqp ?"} - this will result in hole 0 being replaced by a "pqp", whoose arguement is the new hole 0.
+5. {"command": "GIVE", "hole": 0, "expression": "λ p → ppq ? ?"} - this will result in hole 0 being replaced by "λ p → ppq ? ?", where the '?' are new holes.
+6. {"command": "GIVE", "hole": 0, "expression": "p"} -- this will complete the hole
+7. {"command": "GIVE", "hole": 0, "expression": "p"} -- this will complete the hole
+8. {"command": "GIVE", "hole": 0, "expression": "λ p → ppq ? ?"} -- this will replace the hole with "λ p → ppq ? ?", where the '?' are new holes (hole 0 and 1 respectively)
+9. {"command": "GIVE", "hole": 0, "expression": "p"} -- this will complete the hole
+10. {"command": "GIVE", "hole": 0, "expression": "p"} -- this will complete the hole
+
+data _∨_ (A B : Set) : Set where
+    left : A → A ∨ B
+    right : B → A ∨ B
+
+thm3 : {P Q : Set} → P ∨ Q → Q ∨ P 
+thm3 = {!0!}
+
+How to solve thm3
+1. {"command": "ADD_BINDERS", "binders": ["pq"], "function": "thm3"} - this binds the function type (P ∨ Q) to "pq"
+2. {"command": "CASE_SPLIT", "hole": 0, "binder": "pq"} - this will result in a pattern match that looks like (left x) = ? and another row with (right x) = ?
+3. {"command": "GIVE", "hole": 0, "expression": "right ?"} -- this will replace the hole with a "right ?", where the '?' is hole representing the arguement to the 'right'-constructor for ∨
+4. {"command": "GIVE", "hole": 0, "expression": "x"} -- this will complete the hole
+5. {"command": "AUTO", "hole": 0} -- Can be autocompleted or completed as demonstrated above. 
+
+data _∧_ (A B : Set) : Set where
+    both : A → B → A ∧ B
+
+thm4 : {P Q : Set} → P ∧ Q → Q ∧ P
+thm4 = {!0!}
+
+How to solve thm4
+1. {"command": "CASE_SPLIT", "hole": 0, "binders": ["pq"]} - binders are already in place, so we can case split immediately. Pattern match is now "(both x x₁)"
+2. {"command": "GIVE", "hole": 0, "expression": "both ? ?"} - this will replace the given hole with "both ? ?" where the '?' are the new holes that represents arguments for the both-constructor. 
+3. {"command": "GIVE", "hole": 0, "expression": "x₁"} - this will fill the hole (giving x₁ as the left hand side)
+4. {"command": "GIVE", "hole": 0, "expression": "x"} - this will fill the hole (giving x as the right hand side)
+
+thm5 : {P Q R : Set} → P ∧ (Q ∧ R) → (P ∧ Q) ∧ R
+thm5 = {!0!}
+
+How to solve thm5
+1. {"command": "ADD_BINDERS", "binders": ["pqr"], "function": "thm5"} -- this binds the function type "P ∧ (Q ∧ R)" to "pqr"
+2. {"command": "CASE_SPLIT", "hole": 0, "binder": "pqr"} -- pattern match is now "(both x pqr)"
+3. {"command": "GIVE", "hole": 0, "expression": "both ? r"} -- replaces the given hole with "both ? r" where the '?' is a new hole
+4. {"command": "GIVE", "hole": 0, "expression": "both p q"} -- fills the hole completely
+
+data ⊥ : Set where
+
+¬ : Set → Set
+¬ A = A → ⊥
+
+any : {A : Set} → ⊥ → A
+any ()
+
+thm6 : {P Q R : Set} → (Q → (P → R)) → ¬ R → Q → ¬ P
+thm6 = {!0!}
+
+How to solve thm6
+1. {"command": "ADD_BINDERS", "binders": ["qpr", "nr", "q"], "function": "thm6"} -- this binds the function type "(Q → (P → R))" to "qpr", (¬ R) to "nr" and Q to q
+2. {"command": "GIVE", "hole": 0, "expression": "λ p → nr (qpr ? ?)"} - replaces the given hole, where the '?' are new holes
+3. {"command": "GIVE", "hole": 0, "expression": "q"} - completes the hole
+4. {"command": "GIVE", "hole": 0, "expression": "p"} - completes the hole
+
+thm7 : {P Q : Set} → P ∧ Q → ¬ (¬ P ∨ ¬ Q)
+thm7 pq = {!0!}
+
+How to solve thm7:
+1. {"command": "ADD_BINDERS", "binders": ["bla"], "function": "thm7"} -- We don't have all the binders available, therefore, we add another
+   Resulting Code: 
+     thm7 : {P Q : Set} → P ∧ Q → ¬ (¬ P ∨ ¬ Q)
+     thm7 pq bla = {!0!}
+2. {"command": "CASE_SPLIT", "hole": 0, "binder": "pq"}
+   Resulting Code:
+     thm7 : {P Q : Set} → P ∧ Q → ¬ (¬ P ∨ ¬ Q)
+     thm7 (both x x₁) bla = {!0!}
+3. {"command": "CASE_SPLIT", "hole": 0, "binder": "bla"}
+   Resulting Code:
+     thm7 : {P Q : Set} → P ∧ Q → ¬ (¬ P ∨ ¬ Q)
+     thm7 (both x x₁) (left x₂) = {!0!}
+     thm7 (both x x₁) (right x₂) = {!1!}
+4. {"command": "GIVE", "hole": 0, "expression": "x₂ x"} -- completes the hole
+   Resulting Code:
+     thm7 : {P Q : Set} → P ∧ Q → ¬ (¬ P ∨ ¬ Q)
+     thm7 (both x x₁) (left x₂) = x₂ x -- Complete
+     thm7 (both x x₁) (right x₂) = {!0!}
+4. {"command": "GIVE", "hole": 0, "expression": "x₂ x₁"} -- completes the hole
+   Resulting Code:
+     thm7 : {P Q : Set} → P ∧ Q → ¬ (¬ P ∨ ¬ Q)
+     thm7 (both x x₁) (left x₂) = x₂ x
+     thm7 (both x x₁) (right x₂) = x₂ x₁

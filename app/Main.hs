@@ -2,6 +2,7 @@ module Main where
 
 import AgdaProc (AgdaProc, startAgda)
 import Command
+import Control.Concurrent (threadDelay)
 import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Text as TL
@@ -15,13 +16,21 @@ contextFile = "/tmp/context_file"
 codeFile :: String
 codeFile = "Example.agda"
 
+tmpFile :: String
+tmpFile = "/tmp/tempFile.agda"
+
 previousResponsesFile :: String
 previousResponsesFile = "/tmp/prev_resp_file"
 
 main :: IO ()
 main = do
   agda <- startAgda
+  codeContents <- TIO.readFile codeFile
+  TIO.writeFile tmpFile (TL.pack "")
+  TIO.writeFile tmpFile codeContents
+
   res <- runExceptT (load agda)
+
   TIO.writeFile previousResponsesFile (TL.pack "")
   case res of
     Left err -> print err
@@ -33,7 +42,7 @@ feedbackLoop holes agda counter =
     then return ()
     else do
       writeContext holes
-      putStrLn "Querying gpt-5-nano..."
+      putStrLn "Querying gpt-5..."
       putStrLn "Waiting for response..."
       response <- queryNano
       putStrLn $ "Got response: " ++ response
@@ -44,6 +53,7 @@ feedbackLoop holes agda counter =
           Auto hole -> runExceptT (autoAndReload holes agda hole) >>= handleAgdaResponse response
           AddBinders binders name -> runExceptT (addBinders agda name binders) >>= handleAgdaResponse response
           CaseSplit hole binder -> runExceptT (caseSplit holes agda hole binder) >>= handleAgdaResponse response
+          Reset -> handleReset
   where
     writeContext :: LoadData -> IO ()
     writeContext holes' = TIO.writeFile contextFile (TL.pack (prettyHoles holes'))
@@ -55,7 +65,7 @@ feedbackLoop holes agda counter =
     handleErr :: String -> ResponseError -> IO ()
     handleErr resp err = case err of
       HoleNotFound hole -> do
-        putStrLn $ "Trying to complte"
+        putStrLn $ "Trying to complete"
         TIO.appendFile previousResponsesFile $ TL.pack $ resp ++ " - " ++ "Error: " ++ "Hole " ++ show hole ++ " not found in context." ++ " - " ++ "Request " ++ show counter ++ "\n"
         feedbackLoop holes agda (counter + 1)
       AgdaError msg -> do
@@ -72,5 +82,18 @@ feedbackLoop holes agda counter =
     handleAgdaResponse resp res = case res of
       Left err -> handleErr resp err
       Right holes' -> case holes' of
-        [] -> putStrLn "All Done!"
+        [] -> do
+          putStrLn "All Done!"
+          finFile <- TIO.readFile tmpFile
+          TIO.writeFile codeFile finFile
         _ -> handleSuccess resp holes'
+
+    handleReset :: IO ()
+    handleReset = do
+      codeContents <- TIO.readFile codeFile
+      TIO.writeFile tmpFile (TL.pack "")
+      TIO.writeFile tmpFile codeContents
+      resHoles <- runExceptT (load agda)
+      case resHoles of
+        Left err -> print err
+        Right resetHoles -> feedbackLoop resetHoles agda (counter + 1)

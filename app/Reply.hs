@@ -11,6 +11,7 @@ data Command
   | Auto Int
   | CaseSplit Int String
   | AddBinders [String] String
+  | Reset
   deriving (Show, Eq)
 
 instance FromJSON Command where
@@ -29,6 +30,7 @@ parseCommand o = do
     "AUTO" -> Auto <$> o .: "hole"
     "CASE_SPLIT" -> CaseSplit <$> o .: "hole" <*> o .: "binder"
     "ADD_BINDERS" -> AddBinders <$> o .: "binders" <*> o .: "function"
+    "RESET" -> pure Reset
     other -> fail $ "Unknown command: " ++ other
 
 parse :: ByteString -> Either String Command

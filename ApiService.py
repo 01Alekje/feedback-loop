@@ -70,6 +70,15 @@ my_schema = {
                 },
                 "required": ["command", "hole", "binder"],
                 "additionalProperties": False
+            },
+            {
+                "title": "RESET",
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "const": "RESET"}
+                },
+                "required": ["command"],
+                "additionalProperties": False
             }
             ]
         }
@@ -78,9 +87,12 @@ my_schema = {
     }
 }
 
+with open("example-solutions.txt", 'r') as file:
+    examples = file.read()
+
 def get_structured_output(code: str, context: str, prev_responses):
     completion = client.chat.completions.create(
-        model="gpt-5-nano",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": 
             """You are currently within a feedback loop. You will be given a prompt and you must respond with a JSON object that conforms to the provided schema. Only respond with the JSON object, nothing else.
@@ -94,15 +106,20 @@ def get_structured_output(code: str, context: str, prev_responses):
                 - GIVE: This command will ask you to provide an expression to fill the hole. You must provide the hole number and the expression you want to use. Do not use newline characters in your expression. This should be used as refinement, for instance if you want to prove Q and you have pq : P -> Q, then you can use GIVE (hole, "pq ?") to fill the hole. Which will create a new hole with the type P. This should not be used to pattern match on anything, use ADD_BINDERS together with CASE_SPLIT for that purpose.
                 - ADD_BINDERS: This command will ask you to add a list of binders to a specified function. You must provide the list of binders and the function you want to add them to. If you need to prove something of type P -> Q, you should almost always use this command to bind a identifier to P. This does not create or fill any holes.
                 - CASE_SPLIT: Use this command to case split on a binder. This works for binders of algebraic data types (given by the data ... keyword). This is your only method of pattern matching (you cannot use GIVE for this). You must provide the hole number and the binder you want to case split on.
+                - RESET: Use this command to completely reset the file to its original state. 
 
                 Important: 
                  - Never try an expression like "case .. of ..." since it is not valid Agda syntax and won't work. Instead, use ADD_BINDERS followed by a CASE_SPLIT. 
+                 - The expressions you supply in GIVE should always be syntactically correct. 
+                 - Never (ever) supply newline-characters. 
+                 - Never supply the full line of code. Only supply the part that should go into the hole, or use ADD_BINDERS / CASE_SPLIT. 
                 
                 Tips: 
                 - Always try to use AUTO first, it is often able to fill in simple expressions.
                 - If you need to prove something of type P -> Q (or in general A -> B -> C -> D), use ADD_BINDERS to add a binder for P to the function you are trying to prove.
-                - If you need to case split on a binder, use CASE_SPLIT with the appropriate hole number and binder name. Never use
-            """},
+                - If the function you need to complete takes arguments, it is usually a good idea to pattern match on the arguments. 
+                    - To do this, use {"command": "ADD_BINDERS", "binders": ["<your chosen binder-name>"], "function": "<function-name>"}
+            """ + examples},
             {"role" : "system", "content" : prev_responses},
             {"role" : "system", "content" : code},
             {"role" : "system", "content" : context},
