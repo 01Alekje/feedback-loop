@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
-module Command (load, LoadData, prettyHoles, autoAndReload, giveAndReload, addBinders, caseSplit, ResponseError (..)) where
+module Command (load, LoadData, prettyHoles, auto, give, addBinders, caseSplit, ResponseError (..)) where
 
 import AgdaProc (AgdaProc (..))
 import Control.Monad.Except
@@ -42,6 +42,7 @@ load :: AgdaProc -> AgdaM LoadData
 load agda = do
   sendCommand agda loadString
   resp <- liftIO $ getResponse agda
+  liftIO $ print resp
   case resp of
     ResponseDisplay (DisplayInfo _ info') -> case info' of
       ErrorInfo (ErrorDetails msg) _ -> throwError $ AgdaError $ TL.unpack msg
@@ -138,8 +139,8 @@ addBindersLines name binders = map addBindersLine
     lookupIndex _ [] = Nothing
     lookupIndex e' ((c, pos) : ys) = if e' == c then Just pos else lookupIndex e' ys
 
-giveAndReload :: LoadData -> AgdaProc -> Int -> String -> AgdaM LoadData
-giveAndReload holes agda id exp = case lookup id holes of
+give :: LoadData -> AgdaProc -> Int -> String -> AgdaM LoadData
+give holes agda id exp = case lookup id holes of
   Nothing -> throwError $ HoleNotFound id
   Just hole -> do
     sendCommand agda (giveString id exp)
@@ -149,13 +150,14 @@ giveAndReload holes agda id exp = case lookup id holes of
         _ <- liftIO $ getResponse agda
         liftIO $ replaceHoleInFile (TL.unpack str) hole
         load agda
+
       ResponseDisplay (DisplayInfo _ info') -> case info' of
         ErrorInfo (ErrorDetails msg) _ -> throwError $ AgdaError (TL.unpack msg)
         _ -> throwError UnknownResponse
       _ -> throwError UnknownResponse
 
-autoAndReload :: LoadData -> AgdaProc -> Int -> AgdaM LoadData
-autoAndReload holes agda id = case lookup id holes of
+auto :: LoadData -> AgdaProc -> Int -> AgdaM LoadData
+auto holes agda id = case lookup id holes of
   Nothing -> throwError $ HoleNotFound id
   Just hole -> do
     sendCommand agda (autoString id)
@@ -198,7 +200,7 @@ qoute :: String -> String
 qoute str = "\"" ++ str ++ "\""
 
 exampleFile :: String
-exampleFile = "/tmp/tempFile.agda"
+exampleFile = "/tmp/Example.agda"
 
 autoString :: Int -> String
 autoString hole = "IOTCM " ++ qoute exampleFile ++ " None Indirect (Cmd_autoOne AsIs " ++ show hole ++ " noRange " ++ qoute [] ++ ")"

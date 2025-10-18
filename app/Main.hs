@@ -17,7 +17,7 @@ codeFile :: String
 codeFile = "Example.agda"
 
 tmpFile :: String
-tmpFile = "/tmp/tempFile.agda"
+tmpFile = "/tmp/Example.agda"
 
 previousResponsesFile :: String
 previousResponsesFile = "/tmp/prev_resp_file"
@@ -37,10 +37,7 @@ main = do
     Right holes -> feedbackLoop holes agda 0
 
 feedbackLoop :: LoadData -> AgdaProc -> Int -> IO ()
-feedbackLoop holes agda counter =
-  if counter == 10
-    then return ()
-    else do
+feedbackLoop holes agda counter = do
       writeContext holes
       putStrLn "Querying gpt-5..."
       putStrLn "Waiting for response..."
@@ -49,8 +46,8 @@ feedbackLoop holes agda counter =
       case parse (BL.pack response) of
         Left err -> putStrLn err
         Right command -> case command of
-          Give hole expr -> runExceptT (giveAndReload holes agda hole expr) >>= handleAgdaResponse response
-          Auto hole -> runExceptT (autoAndReload holes agda hole) >>= handleAgdaResponse response
+          Give hole expr -> runExceptT (give holes agda hole expr) >>= handleAgdaResponse response
+          Auto hole -> runExceptT (auto holes agda hole) >>= handleAgdaResponse response
           AddBinders binders name -> runExceptT (addBinders agda name binders) >>= handleAgdaResponse response
           CaseSplit hole binder -> runExceptT (caseSplit holes agda hole binder) >>= handleAgdaResponse response
           Reset -> handleReset
@@ -60,7 +57,7 @@ feedbackLoop holes agda counter =
 
     queryNano :: IO String
     queryNano = do
-      readProcess "python3" ["ApiService.py", codeFile, contextFile, previousResponsesFile] ""
+      readProcess "python3" ["ApiService.py", tmpFile, contextFile, previousResponsesFile] ""
 
     handleErr :: String -> ResponseError -> IO ()
     handleErr resp err = case err of
@@ -71,7 +68,7 @@ feedbackLoop holes agda counter =
       AgdaError msg -> do
         TIO.appendFile previousResponsesFile $ TL.pack $ resp ++ " - " ++ "Error: " ++ msg ++ " - " ++ "Request " ++ show counter ++ "\n"
         feedbackLoop holes agda (counter + 1)
-      UnknownResponse -> print "Got an unknown response from agda"
+      UnknownResponse -> putStrLn "Got an unknown response from agda"
 
     handleSuccess :: String -> LoadData -> IO ()
     handleSuccess resp holes' = do
