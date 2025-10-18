@@ -153,17 +153,19 @@ give :: LoadData -> AgdaProc -> Int -> String -> AgdaM LoadData
 give holes agda id exp = case lookup id holes of
   Nothing -> throwError $ HoleNotFound id
   Just hole -> do
-    contents <- liftIO $ lines . TL.unpack <$> TIO.readFile exampleFile
     sendCommand agda (giveString id exp)
     resp <- liftIO $ getResponse agda
+    liftIO $ print resp
     case resp of
       ResponseGive (GiveResult (GiveResultContent str) _ _) -> do
         _ <- liftIO $ getResponse agda
+        contents <- liftIO $ lines . TL.unpack <$> TIO.readFile exampleFile
         liftIO $ replaceHoleInFile (TL.unpack str) hole
         result <- liftIO $ runExceptT (load agda)
         case result of
           Left err -> do
             liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines contents
+            load agda
             throwError err
           Right val -> return val
       ResponseDisplay (DisplayInfo _ info') -> case info' of
