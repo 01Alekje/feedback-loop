@@ -42,13 +42,16 @@ load :: AgdaProc -> AgdaM LoadData
 load agda = do
   sendCommand agda loadString
   resp <- liftIO $ getResponse agda
-  liftIO $ print resp
   case resp of
     ResponseDisplay (DisplayInfo _ info') -> case info' of
       ErrorInfo (ErrorDetails msg) _ -> throwError $ AgdaError $ TL.unpack msg
-      AllGoalsWarnings _ _ vs _ -> do
-        holes <- liftIO $ mapM (uncurry getHole . getRangeAndId) vs
-        pure $ foldr (\x acc -> maybe acc (: acc) x) [] holes
+      AllGoalsWarnings errs _ vs _ -> do
+        if null errs
+          then do
+            holes <- liftIO $ mapM (uncurry getHole . getRangeAndId) vs
+            pure $ foldr (\x acc -> maybe acc (: acc) x) [] holes
+          else do
+            throwError $ errorFromList errs
       _ -> throwError UnknownResponse
     _ -> throwError UnknownResponse
   where
@@ -78,6 +81,13 @@ load agda = do
     getRangeAndId (VisibleGoal (ConstraintObj id rs) _ _) = case rs of
       [range] -> (range, id)
       _ -> undefined
+
+    errorFromList :: [ErrorDetails] -> ResponseError
+    errorFromList [] = UnknownResponse
+    errorFromList errs =
+      let cleanMsgs = map (filter (/= '\n') . TL.unpack . errorMessage) errs
+          allMsgs = intercalate "\n" cleanMsgs
+       in AgdaError allMsgs
 
 caseSplit :: LoadData -> AgdaProc -> Int -> String -> AgdaM LoadData
 caseSplit holes agda id binder = do
@@ -143,14 +153,19 @@ give :: LoadData -> AgdaProc -> Int -> String -> AgdaM LoadData
 give holes agda id exp = case lookup id holes of
   Nothing -> throwError $ HoleNotFound id
   Just hole -> do
+    contents <- liftIO $ lines . TL.unpack <$> TIO.readFile exampleFile
     sendCommand agda (giveString id exp)
     resp <- liftIO $ getResponse agda
     case resp of
       ResponseGive (GiveResult (GiveResultContent str) _ _) -> do
         _ <- liftIO $ getResponse agda
         liftIO $ replaceHoleInFile (TL.unpack str) hole
-        load agda
-
+        result <- liftIO $ runExceptT (load agda)
+        case result of
+          Left err -> do
+            liftIO $ TIO.writeFile exampleFile $ TL.pack $ unlines contents
+            throwError err
+          Right val -> return val
       ResponseDisplay (DisplayInfo _ info') -> case info' of
         ErrorInfo (ErrorDetails msg) _ -> throwError $ AgdaError (TL.unpack msg)
         _ -> throwError UnknownResponse
@@ -194,7 +209,8 @@ getResponse agda = do
           else agdaLine
   case parse (BSL.fromStrict agdaLine') of
     Left _ -> getResponse agda
-    Right disp -> pure disp
+    Right disp -> do
+      pure disp
 
 qoute :: String -> String
 qoute str = "\"" ++ str ++ "\""

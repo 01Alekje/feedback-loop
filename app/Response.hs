@@ -38,7 +38,7 @@ data DisplayInfo = DisplayInfo
 
 data InfoContent
   = AllGoalsWarnings
-      { errors :: [Value],
+      { errors :: [ErrorDetails],
         invisibleGoals :: [Value],
         visibleGoals :: [VisibleGoal],
         warnings :: [Value]
