@@ -155,7 +155,6 @@ give holes agda id exp = case lookup id holes of
   Just hole -> do
     sendCommand agda (giveString id exp)
     resp <- liftIO $ getResponse agda
-    liftIO $ print resp
     case resp of
       ResponseGive (GiveResult (GiveResultContent str) _ _) -> do
         _ <- liftIO $ getResponse agda
@@ -218,7 +217,7 @@ qoute :: String -> String
 qoute str = "\"" ++ str ++ "\""
 
 exampleFile :: String
-exampleFile = "/tmp/Example.agda"
+exampleFile = "/tmp/Proof.agda"
 
 autoString :: Int -> String
 autoString hole = "IOTCM " ++ qoute exampleFile ++ " None Indirect (Cmd_autoOne AsIs " ++ show hole ++ " noRange " ++ qoute [] ++ ")"

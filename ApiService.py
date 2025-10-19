@@ -14,6 +14,9 @@ with open(sys.argv[2], 'r') as file:
 with open(sys.argv[3], 'r') as file:
     prev_responses_file = file.read()
 
+with open(sys.argv[4], 'r') as file:
+    base_file = file.read()
+
 my_schema = {
     "name": "my_response_format",
     "strict": True,
@@ -90,7 +93,7 @@ my_schema = {
 with open("example-solutions.txt", 'r') as file:
     examples = file.read()
 
-def get_structured_output(code: str, context: str, prev_responses):
+def get_structured_output(code: str, context: str, prev_responses: str, base: str):
     completion = client.chat.completions.create(
         model="gpt-5-mini",
         messages=[
@@ -121,6 +124,7 @@ def get_structured_output(code: str, context: str, prev_responses):
                     - To do this, use {"command": "ADD_BINDERS", "binders": ["<your chosen binder-name>"], "function": "<function-name>"}
             """ + examples},
             {"role" : "system", "content" : prev_responses},
+            {"role" : "system", "content" : base},
             {"role" : "system", "content" : code},
             {"role" : "system", "content" : context},
             {"role": "user", "content": "Please try to fill all of the holes in the code given:"}
@@ -133,5 +137,5 @@ def get_structured_output(code: str, context: str, prev_responses):
     
     return json.loads(completion.choices[0].message.content)
 
-result = get_structured_output(agda_file, context_file, prev_responses_file)
+result = get_structured_output(agda_file, context_file, prev_responses_file, base_file)
 print(json.dumps(result), end='')

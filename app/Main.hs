@@ -13,10 +13,16 @@ contextFile :: String
 contextFile = "/tmp/context_file"
 
 codeFile :: String
-codeFile = "Example.agda"
+codeFile = "Proof.agda"
 
 tmpFile :: String
-tmpFile = "/tmp/Example.agda"
+tmpFile = "/tmp/Proof.agda"
+
+baseFile :: String
+baseFile = "Base.agda"
+
+tmpBaseFile :: String
+tmpBaseFile = "/tmp/Base.agda"
 
 previousResponsesFile :: String
 previousResponsesFile = "/tmp/prev_resp_file"
@@ -27,12 +33,14 @@ main = do
   codeContents <- TIO.readFile codeFile
   TIO.writeFile tmpFile (TL.pack "")
   TIO.writeFile tmpFile codeContents
+  baseContents <- TIO.readFile baseFile
+  TIO.writeFile tmpBaseFile baseContents
+  TIO.writeFile previousResponsesFile (TL.pack "")
 
   res <- runExceptT (load agda)
-
-  TIO.writeFile previousResponsesFile (TL.pack "")
   case res of
     Left err -> print err
+    Right [] -> putStrLn "All Done!"
     Right holes -> feedbackLoop holes agda 0
 
 feedbackLoop :: LoadData -> AgdaProc -> Int -> IO ()
@@ -40,7 +48,7 @@ feedbackLoop holes agda counter = do
   writeContext holes
   putStrLn "Querying gpt-5..."
   putStrLn "Waiting for response..."
-  response <- queryNano
+  response <- query
   putStrLn $ "Got response: " ++ response
   case parse (BL.pack response) of
     Left err -> putStrLn err
@@ -54,9 +62,9 @@ feedbackLoop holes agda counter = do
     writeContext :: LoadData -> IO ()
     writeContext holes' = TIO.writeFile contextFile (TL.pack (prettyHoles holes'))
 
-    queryNano :: IO String
-    queryNano = do
-      readProcess "python3" ["ApiService.py", tmpFile, contextFile, previousResponsesFile] ""
+    query :: IO String
+    query = do
+      readProcess "python3" ["ApiService.py", tmpFile, contextFile, previousResponsesFile, baseFile] ""
 
     handleErr :: String -> ResponseError -> IO ()
     handleErr resp err = case err of
